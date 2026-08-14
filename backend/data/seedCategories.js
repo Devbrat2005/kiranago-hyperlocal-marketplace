@@ -1,0 +1,30 @@
+const categories = [
+  { id: 'cat_grocery', name: 'Grocery', icon: 'ShoppingBag', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_atta', name: 'Atta & Flour', icon: 'Wheat', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_rice', name: 'Rice & Grains', icon: 'Container', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_dal', name: 'Dal & Pulses', icon: 'Layers', image: 'https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_oil', name: 'Oil & Ghee', icon: 'Droplets', image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_spices', name: 'Spices & Masala', icon: 'Flame', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_dairy', name: 'Dairy & Eggs', icon: 'Milk', image: 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_fruits', name: 'Fruits', icon: 'Apple', image: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_vegetables', name: 'Vegetables', icon: 'Carrot', image: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_bread', name: 'Bread & Bakery', icon: 'Bread', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_biscuits', name: 'Biscuits', icon: 'Cookie', image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_chocolates', name: 'Chocolates', icon: 'Gift', image: 'https://images.unsplash.com/photo-1511381939415-e44015466834?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_chips', name: 'Chips & Snacks', icon: 'Utensils', image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_tea', name: 'Tea & Coffee', icon: 'Coffee', image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_drinks', name: 'Cold Drinks', icon: 'CupSoda', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_packaged', name: 'Packaged Food', icon: 'Package', image: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_instant', name: 'Instant Food', icon: 'Zap', image: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_personal', name: 'Personal Care', icon: 'Sparkles', image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_hair', name: 'Hair Care', icon: 'Scissors', image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_oral', name: 'Oral Care', icon: 'Smile', image: 'https://images.unsplash.com/photo-1559599101-f09722fb4948?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_cleaning', name: 'Cleaning Products', icon: 'Brush', image: 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_laundry', name: 'Laundry', icon: 'Shirt', image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_kitchen', name: 'Kitchen Items', icon: 'ChefHat', image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_stationery', name: 'Stationery', icon: 'PenTool', image: 'https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_baby', name: 'Baby Care', icon: 'Heart', image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=500&auto=format&fit=crop&q=60' },
+  { id: 'cat_pet', name: 'Pet Care', icon: 'Dog', image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=500&auto=format&fit=crop&q=60' }
+];
+
+module.exports = categories;

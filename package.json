@@ -1,0 +1,14 @@
+{
+  "name": "kiranago-app",
+  "version": "1.0.0",
+  "description": "KiranaGo - Your Local Store, Delivered Fast.",
+  "scripts": {
+    "start": "node backend/server.js",
+    "backend": "node backend/server.js",
+    "frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
+  },
+  "dependencies": {
+    "isomorphic-git": "^1.41.4"
+  }
+}
