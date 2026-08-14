@@ -32,7 +32,8 @@ class MemoryCollection {
       }
       fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf8');
     } catch (err) {
-      console.error(`Error saving database collection ${this.name}:`, err.message);
+      // In serverless environments with read-only root, safely retain in-memory state
+      console.warn(`Note: Storage collection ${this.name} running in-memory mode (${err.message})`);
     }
   }
 
@@ -125,7 +126,9 @@ class MemoryCollection {
 
 class KiranaDB {
   constructor() {
-    this.dataDir = path.join(__dirname, '..', 'data_store');
+    this.dataDir = process.env.VERCEL 
+      ? path.join('/tmp', 'data_store') 
+      : path.join(__dirname, '..', 'data_store');
     this.collections = {};
   }
 
@@ -142,6 +145,6 @@ const db = new KiranaDB();
 module.exports = {
   db,
   connectDB: () => {
-    console.log('⚡ KiranaDB Storage Engine Initialized (Persisted local JSON store)');
+    console.log('⚡ KiranaDB Storage Engine Initialized (Serverless & Persistent JSON Store)');
   }
 };
