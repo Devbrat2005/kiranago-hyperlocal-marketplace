@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useLocation } from '../../context/LocationContext';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../config/api';
 import { MapPin, CreditCard, QrCode, Wallet, Banknote, ShieldCheck, Tag, CheckCircle2, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 
 // Helper function to dynamically load Razorpay script
@@ -44,7 +45,7 @@ export default function CheckoutPage({ onOrderPlaced, onBackToCart }) {
   const handleApplyCoupon = async () => {
     setCouponError('');
     try {
-      const res = await fetch('/api/coupons/validate', {
+      const res = await fetch(getApiUrl('/api/coupons/validate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: couponCode, cartSubtotal: grandSubtotal })
@@ -84,7 +85,7 @@ export default function CheckoutPage({ onOrderPlaced, onBackToCart }) {
       }
 
       // Step 1: Create Razorpay Order via Express Backend API
-      const res = await fetch('/api/payments/create-intent', {
+      const res = await fetch(getApiUrl('/api/payments/create-intent'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,7 +114,7 @@ export default function CheckoutPage({ onOrderPlaced, onBackToCart }) {
         handler: async function (response) {
           try {
             // Step 3: Create Order in MongoDB & Verify Payment Signature
-            const orderRes = await fetch('/api/orders', {
+            const orderRes = await fetch(getApiUrl('/api/orders'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -134,7 +135,7 @@ export default function CheckoutPage({ onOrderPlaced, onBackToCart }) {
             const createdOrder = orderData.orders[0];
 
             // Verify Razorpay payment signature on backend
-            await fetch('/api/payments/verify', {
+            await fetch(getApiUrl('/api/payments/verify'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -200,7 +201,7 @@ export default function CheckoutPage({ onOrderPlaced, onBackToCart }) {
   const executeOrderPlacement = async (pm = paymentMethod, pStatus = 'PENDING') => {
     setIsProcessingPayment(true);
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch(getApiUrl('/api/orders'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

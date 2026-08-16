@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, User, ChevronDown, Sparkles, AlertCircle, Headphones, TicketCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function AISupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,7 +38,7 @@ export default function AISupportWidget() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/ai/chat', {
+      const response = await fetch(getApiUrl('/api/ai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 import { ShieldCheck, Store, Users, ShoppingBag, DollarSign, Check, X, Bot, TicketCheck } from 'lucide-react';
 
 export default function AdminDashboardPage({ onOpenAIChats }) {
@@ -14,8 +15,8 @@ export default function AdminDashboardPage({ onOpenAIChats }) {
     setLoading(true);
     try {
       const [statRes, storeRes] = await Promise.all([
-        fetch('/api/admin/stats'),
-        fetch('/api/admin/stores')
+        fetch(getApiUrl('/api/admin/stats')),
+        fetch(getApiUrl('/api/admin/stores'))
       ]);
       const statData = await statRes.json();
       const storeData = await storeRes.json();
@@ -31,7 +32,7 @@ export default function AdminDashboardPage({ onOpenAIChats }) {
 
   const handleApproveStore = async (storeId) => {
     try {
-      const res = await fetch(`/api/admin/stores/${storeId}/approve`, { method: 'PUT' });
+      const res = await fetch(getApiUrl(`/api/admin/stores/${storeId}/approve`), { method: 'PUT' });
       const data = await res.json();
       if (data.success) fetchAdminData();
     } catch (err) {
@@ -41,7 +42,7 @@ export default function AdminDashboardPage({ onOpenAIChats }) {
 
   const handleRejectStore = async (storeId) => {
     try {
-      const res = await fetch(`/api/admin/stores/${storeId}/reject`, { method: 'PUT' });
+      const res = await fetch(getApiUrl(`/api/admin/stores/${storeId}/reject`), { method: 'PUT' });
       const data = await res.json();
       if (data.success) fetchAdminData();
     } catch (err) {

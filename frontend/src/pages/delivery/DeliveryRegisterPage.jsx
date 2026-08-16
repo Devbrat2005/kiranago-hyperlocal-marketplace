@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getApiUrl } from '../../config/api';
 import { Truck, CheckCircle2, ShieldCheck, FileText, Phone } from 'lucide-react';
 
 export default function DeliveryRegisterPage({ onRegistered }) {
@@ -17,7 +18,7 @@ export default function DeliveryRegisterPage({ onRegistered }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/delivery/register', {
+      const res = await fetch(getApiUrl('/api/delivery/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

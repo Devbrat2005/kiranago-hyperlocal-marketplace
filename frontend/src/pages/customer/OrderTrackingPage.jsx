@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 import { MapPin, Clock, Store, Truck, Phone, CheckCircle2, AlertCircle, RefreshCw, FileText } from 'lucide-react';
 
 export default function OrderTrackingPage({ orderId }) {
@@ -13,7 +14,7 @@ export default function OrderTrackingPage({ orderId }) {
 
   const fetchOrderDetails = async () => {
     try {
-      const res = await fetch(`/api/orders/${orderId}`);
+      const res = await fetch(getApiUrl(`/api/orders/${orderId}`));
       const data = await res.json();
       if (data.success) {
         setOrder(data.order);
@@ -28,7 +29,7 @@ export default function OrderTrackingPage({ orderId }) {
   const handleCancelOrder = async () => {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
     try {
-      const res = await fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' });
+      const res = await fetch(getApiUrl(`/api/orders/${orderId}/cancel`), { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         fetchOrderDetails();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 import { Store, ShoppingBag, DollarSign, AlertTriangle, Plus, CheckCircle2, Clock, Package, Edit2, Trash2 } from 'lucide-react';
 
 export default function StoreDashboardPage() {
@@ -27,8 +28,8 @@ export default function StoreDashboardPage() {
     setLoading(true);
     try {
       const [ordRes, prodRes] = await Promise.all([
-        fetch('/api/orders?role=STORE_OWNER'),
-        fetch('/api/products?limit=50')
+        fetch(getApiUrl('/api/orders?role=STORE_OWNER')),
+        fetch(getApiUrl('/api/products?limit=50'))
       ]);
       const ordData = await ordRes.json();
       const prodData = await prodRes.json();
@@ -44,7 +45,7 @@ export default function StoreDashboardPage() {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
+      const res = await fetch(getApiUrl(`/api/orders/${orderId}/status`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -61,7 +62,7 @@ export default function StoreDashboardPage() {
   const handleAddProductSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/products', {
+      const res = await fetch(getApiUrl('/api/products'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProd)

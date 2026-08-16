@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ProductCard from '../../components/customer/ProductCard';
 import StoreCard from '../../components/customer/StoreCard';
 import { useLocation } from '../../context/LocationContext';
+import { getApiUrl } from '../../config/api';
 import { Search, Filter, SlidersHorizontal, Store, ShoppingBag, X } from 'lucide-react';
 
 export default function SearchPage({ initialQuery = '', onSelectStore, onSelectProduct }) {
@@ -34,7 +35,7 @@ export default function SearchPage({ initialQuery = '', onSelectStore, onSelectP
       if (maxPrice) url += `&maxPrice=${maxPrice}`;
       if (minRating) url += `&minRating=${minRating}`;
 
-      const response = await fetch(url);
+      const response = await fetch(getApiUrl(url));
       const data = await response.json();
       if (data.success) {
         setSearchResults(data);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from '../../components/customer/ProductCard';
+import { getApiUrl } from '../../config/api';
 import { Star, Clock, MapPin, Search, Tag, ShieldCheck, Phone, Info } from 'lucide-react';
 
 export default function StoreDetailPage({ storeId, onSelectProduct }) {
@@ -19,7 +20,7 @@ export default function StoreDetailPage({ storeId, onSelectProduct }) {
   const fetchStoreDetail = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/stores/${storeId}`);
+      const res = await fetch(getApiUrl(`/api/stores/${storeId}`));
       const data = await res.json();
       if (data.success) {
         setStoreData(data.store);

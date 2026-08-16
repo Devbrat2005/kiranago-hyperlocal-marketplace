@@ -6,6 +6,7 @@ import ProductCard from '../../components/customer/ProductCard';
 import AISupportWidget from '../../components/ai/AISupportWidget';
 import Footer from '../../components/common/Footer';
 import { useLocation } from '../../context/LocationContext';
+import { getApiUrl } from '../../config/api';
 import { Store, ShoppingBag, Sparkles, ChevronRight, Zap, Star, ShieldCheck, RefreshCw } from 'lucide-react';
 
 export default function HomePage({ onSelectStore, onSelectProduct, onOpenSearch, setActiveTab }) {
@@ -26,9 +27,9 @@ export default function HomePage({ onSelectStore, onSelectProduct, onOpenSearch,
       const lng = currentLocation ? currentLocation.lng : 77.6408;
 
       const [catRes, storeRes, prodRes] = await Promise.all([
-        fetch('/api/categories'),
-        fetch(`/api/stores?lat=${lat}&lng=${lng}`),
-        fetch('/api/products?limit=60')
+        fetch(getApiUrl('/api/categories')),
+        fetch(getApiUrl(`/api/stores?lat=${lat}&lng=${lng}`)),
+        fetch(getApiUrl('/api/products?limit=60'))
       ]);
 
       const catData = await catRes.json();

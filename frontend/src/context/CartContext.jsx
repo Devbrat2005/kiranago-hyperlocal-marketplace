@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getApiUrl } from '../config/api';
 
 const CartContext = createContext();
 
@@ -15,7 +16,7 @@ export function CartProvider({ children }) {
 
   const fetchMongoCart = async () => {
     try {
-      const res = await fetch('/api/cart?sessionId=guest_session');
+      const res = await fetch(getApiUrl('/api/cart?sessionId=guest_session'));
       const data = await res.json();
       if (data.success && data.cart && Array.isArray(data.cart.storeGroups)) {
         // Flatten items from MongoDB response
@@ -57,7 +58,7 @@ export function CartProvider({ children }) {
     });
 
     // Save cart data asynchronously to MongoDB Atlas
-    fetch('/api/cart/add', {
+    fetch(getApiUrl('/api/cart/add'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId: pId, quantity, sessionId: 'guest_session' })
@@ -79,13 +80,13 @@ export function CartProvider({ children }) {
 
     // Sync quantity update to MongoDB Atlas
     if (newQuantity <= 0) {
-      fetch(`/api/cart/item/${productId}`, {
+      fetch(getApiUrl(`/api/cart/item/${productId}`), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: 'guest_session' })
       }).catch(err => console.error('MongoDB Cart Remove Error:', err));
     } else {
-      fetch('/api/cart/update', {
+      fetch(getApiUrl('/api/cart/update'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId, quantity: newQuantity, sessionId: 'guest_session' })
@@ -96,7 +97,7 @@ export function CartProvider({ children }) {
   const removeFromCart = (productId) => {
     setItems(prevItems => prevItems.filter(i => String(i._id || i.id || i.productId) !== String(productId)));
 
-    fetch(`/api/cart/item/${productId}`, {
+    fetch(getApiUrl(`/api/cart/item/${productId}`), {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: 'guest_session' })
@@ -107,7 +108,7 @@ export function CartProvider({ children }) {
     setItems([]);
     localStorage.removeItem('kiranago_cart');
 
-    fetch('/api/cart/clear', {
+    fetch(getApiUrl('/api/cart/clear'), {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: 'guest_session' })

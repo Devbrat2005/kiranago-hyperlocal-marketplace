@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 import { Bot, Send, User, Sparkles, ShieldCheck, TicketCheck } from 'lucide-react';
 
 export default function AdminAIChatsPage() {
@@ -14,7 +15,7 @@ export default function AdminAIChatsPage() {
   const fetchConversations = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ai/conversations');
+      const res = await fetch(getApiUrl('/api/ai/conversations'));
       const data = await res.json();
       if (data.success) {
         setConversations(data.conversations);
@@ -34,7 +35,7 @@ export default function AdminAIChatsPage() {
     if (!selectedConvo || !takeoverReply.trim()) return;
 
     try {
-      const res = await fetch('/api/ai/takeover', {
+      const res = await fetch(getApiUrl('/api/ai/takeover'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

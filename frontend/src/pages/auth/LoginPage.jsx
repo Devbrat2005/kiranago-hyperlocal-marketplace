@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Logo from '../../components/common/Logo';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../config/api';
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
 
 export default function LoginPage({ onSwitchToSignup, onLoginSuccess }) {
@@ -16,7 +17,7 @@ export default function LoginPage({ onSwitchToSignup, onLoginSuccess }) {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(getApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

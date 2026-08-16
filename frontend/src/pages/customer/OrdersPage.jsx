@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../config/api';
 import { Clock, Store, MapPin, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function OrdersPage({ onTrackOrder }) {
@@ -14,7 +15,7 @@ export default function OrdersPage({ onTrackOrder }) {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/orders?userId=${user?.id || 'guest_user'}`);
+      const res = await fetch(getApiUrl(`/api/orders?userId=${user?.id || 'guest_user'}`));
       const data = await res.json();
       if (data.success) {
         setOrders(data.orders);

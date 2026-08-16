@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StoreCard from '../../components/customer/StoreCard';
 import { useLocation } from '../../context/LocationContext';
+import { getApiUrl } from '../../config/api';
 import { Store, Filter, Zap, Star, Tag, Clock } from 'lucide-react';
 
 export default function StoresPage({ onSelectStore }) {
@@ -25,7 +26,7 @@ export default function StoresPage({ onSelectStore }) {
       if (filterType === 'popular') url += '&popular=true';
       if (filterType === 'openNow') url += '&openNow=true';
 
-      const res = await fetch(url);
+      const res = await fetch(getApiUrl(url));
       const data = await res.json();
       if (data.success) {
         setStores(data.stores);

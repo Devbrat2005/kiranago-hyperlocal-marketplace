@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 import { Truck, MapPin, CheckCircle2, DollarSign, Navigation, Phone, ShieldCheck, Power } from 'lucide-react';
 
 export default function DeliveryDashboardPage() {
@@ -15,8 +16,8 @@ export default function DeliveryDashboardPage() {
     setLoading(true);
     try {
       const [jobRes, earnRes] = await Promise.all([
-        fetch('/api/delivery/jobs'),
-        fetch('/api/delivery/earnings')
+        fetch(getApiUrl('/api/delivery/jobs')),
+        fetch(getApiUrl('/api/delivery/earnings'))
       ]);
       const jobData = await jobRes.json();
       const earnData = await earnRes.json();
@@ -34,7 +35,7 @@ export default function DeliveryDashboardPage() {
     const nextStatus = !isOnline;
     setIsOnline(nextStatus);
     try {
-      await fetch('/api/delivery/online', {
+      await fetch(getApiUrl('/api/delivery/online'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isOnline: nextStatus })
@@ -46,7 +47,7 @@ export default function DeliveryDashboardPage() {
 
   const handleAcceptJob = async (orderId) => {
     try {
-      const res = await fetch('/api/delivery/accept', {
+      const res = await fetch(getApiUrl('/api/delivery/accept'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId })
@@ -62,7 +63,7 @@ export default function DeliveryDashboardPage() {
 
   const handleUpdateDeliveryStep = async (orderId, newStatus) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
+      const res = await fetch(getApiUrl(`/api/orders/${orderId}/status`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })

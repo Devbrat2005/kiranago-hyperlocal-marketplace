@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getApiUrl } from '../../config/api';
 import { Store, ShieldCheck, CheckCircle2, Building, MapPin, FileText, Clock } from 'lucide-react';
 
 export default function StoreRegisterPage({ onRegistered }) {
@@ -25,7 +26,7 @@ export default function StoreRegisterPage({ onRegistered }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/stores/register', {
+      const res = await fetch(getApiUrl('/api/stores/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
