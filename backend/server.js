@@ -63,8 +63,8 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-// 404 Fallback for unhandled API requests
-app.use((req, res) => {
+// 404 Fallback for unhandled API requests ONLY
+app.use('/api/*', (req, res) => {
   res.status(404).json({ success: false, message: 'API Endpoint Not Found' });
 });
 
