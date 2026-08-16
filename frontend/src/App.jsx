@@ -8,6 +8,7 @@ import Navbar from './components/common/Navbar';
 import BottomNav from './components/common/BottomNav';
 import AddressModal from './components/common/AddressModal';
 import BackButton from './components/common/BackButton';
+import ProductDetailModal from './components/customer/ProductDetailModal';
 
 import HomePage from './pages/customer/HomePage';
 import SearchPage from './pages/customer/SearchPage';
@@ -35,6 +36,7 @@ export default function App() {
 
   const [selectedStoreId, setSelectedStoreId] = useState('store_1');
   const [selectedOrderId, setSelectedOrderId] = useState('KG893121');
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddressModal, setShowAddressModal] = useState(false);
 
@@ -73,6 +75,10 @@ export default function App() {
     changeTab('order_tracking');
   };
 
+  const handleSelectProduct = (product) => {
+    setSelectedProduct(product);
+  };
+
   return (
     <AuthProvider>
       <LocationProvider>
@@ -100,6 +106,7 @@ export default function App() {
                 {activeTab === 'home' && (
                   <HomePage
                     onSelectStore={handleSelectStore}
+                    onSelectProduct={handleSelectProduct}
                     onOpenSearch={handleOpenSearch}
                     setActiveTab={changeTab}
                   />
@@ -109,6 +116,7 @@ export default function App() {
                   <SearchPage
                     initialQuery={searchQuery}
                     onSelectStore={handleSelectStore}
+                    onSelectProduct={handleSelectProduct}
                   />
                 )}
 
@@ -121,6 +129,7 @@ export default function App() {
                 {activeTab === 'store_detail' && (
                   <StoreDetailPage
                     storeId={selectedStoreId}
+                    onSelectProduct={handleSelectProduct}
                   />
                 )}
 
@@ -128,6 +137,7 @@ export default function App() {
                   <SearchPage
                     initialQuery=""
                     onSelectStore={handleSelectStore}
+                    onSelectProduct={handleSelectProduct}
                   />
                 )}
 
@@ -221,6 +231,12 @@ export default function App() {
               <AddressModal
                 isOpen={showAddressModal}
                 onClose={() => setShowAddressModal(false)}
+              />
+
+              {/* Product Detail Modal */}
+              <ProductDetailModal
+                product={selectedProduct}
+                onClose={() => setSelectedProduct(null)}
               />
 
             </div>

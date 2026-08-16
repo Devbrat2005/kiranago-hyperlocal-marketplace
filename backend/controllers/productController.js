@@ -20,7 +20,7 @@ exports.getProducts = async (req, res) => {
       limit = 100
     } = req.query;
 
-    let products = productsCol.find({});
+    let products = await productsCol.find({});
 
     if (storeId) {
       products = products.filter(p => p.storeId === storeId);
@@ -79,20 +79,28 @@ exports.getProducts = async (req, res) => {
     } else if (sort === 'rating') {
       products.sort((a, b) => b.rating - a.rating);
     } else if (sort === 'discount') {
-      products.sort((a, b) => b.discount - a.discount);
+      products.sort((a, b) => (parseFloat(b.discount) || 0) - (parseFloat(a.discount) || 0));
     }
 
     const total = products.length;
     const paginated = products.slice(0, parseInt(limit));
 
-    // Enrich with store name
-    const enriched = paginated.map(p => {
-      const store = storesCol.findById(p.storeId);
+    // Enrich with store name asynchronously
+    const storesMap = {};
+    const enriched = await Promise.all(paginated.map(async p => {
+      let storeName = p.storeName;
+      if (!storeName) {
+        if (!storesMap[p.storeId]) {
+          const store = await storesCol.findById(p.storeId);
+          storesMap[p.storeId] = store ? store.name : 'Kirana Partner';
+        }
+        storeName = storesMap[p.storeId];
+      }
       return {
         ...p,
-        storeName: store ? store.name : 'Kirana Partner'
+        storeName: storeName || 'Kirana Partner'
       };
-    });
+    }));
 
     res.json({
       success: true,
@@ -108,13 +116,13 @@ exports.getProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = productsCol.findById(id);
+    const product = await productsCol.findById(id);
 
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    const store = storesCol.findById(product.storeId);
+    const store = await storesCol.findById(product.storeId);
 
     res.json({
       success: true,
@@ -148,18 +156,18 @@ exports.createProduct = async (req, res) => {
 
     const mrpValue = parseFloat(mrp) || 100;
     const sellValue = parseFloat(sellingPrice) || mrpValue;
-    const discountPct = mrpValue > sellValue ? Math.round(((mrpValue - sellValue) / mrpValue) * 100) : 0;
+    const discountPct = mrpValue > sellValue ? `${Math.round(((mrpValue - sellValue) / mrpValue) * 100)}%` : '0%';
 
-    const newProd = productsCol.insertOne({
+    const newProd = await productsCol.insertOne({
       name,
       brand: brand || 'Generic',
       category: category || 'Grocery',
       categoryId: categoryId || 'cat_grocery',
-      storeId: storeId || req.user.storeId || 'store_1',
+      storeId: storeId || (req.user ? req.user.storeId : 'store_1') || 'store_1',
       image: image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60',
       description: description || 'Fresh high-quality product',
       weight: weight || '500 g',
-      mrp: mrpValue,
+      price: mrpValue,
       sellingPrice: sellValue,
       discount: discountPct,
       stock: parseInt(stock) || 50,
@@ -167,9 +175,7 @@ exports.createProduct = async (req, res) => {
       rating: 4.8,
       reviewsCount: 0,
       isPopular: true,
-      isBestSeller: false,
-      isRecommended: true,
-      createdAt: new Date().toISOString()
+      inStock: true
     });
 
     res.status(201).json({ success: true, message: 'Product created successfully', product: newProd });
@@ -184,13 +190,15 @@ exports.updateProduct = async (req, res) => {
     const updates = req.body;
 
     if (updates.mrp || updates.sellingPrice) {
-      const existing = productsCol.findById(id);
-      const mrp = updates.mrp ? parseFloat(updates.mrp) : existing.mrp;
-      const sellingPrice = updates.sellingPrice ? parseFloat(updates.sellingPrice) : existing.sellingPrice;
-      updates.discount = mrp > sellingPrice ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+      const existing = await productsCol.findById(id);
+      if (existing) {
+        const mrp = updates.mrp ? parseFloat(updates.mrp) : existing.price;
+        const sellingPrice = updates.sellingPrice ? parseFloat(updates.sellingPrice) : existing.sellingPrice;
+        updates.discount = mrp > sellingPrice ? `${Math.round(((mrp - sellingPrice) / mrp) * 100)}%` : '0%';
+      }
     }
 
-    const updated = productsCol.updateOne({ _id: id }, updates);
+    const updated = await productsCol.updateOne({ _id: id }, updates);
     res.json({ success: true, message: 'Product updated successfully', product: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -200,7 +208,7 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    productsCol.deleteOne({ _id: id });
+    await productsCol.deleteOne({ _id: id });
     res.json({ success: true, message: 'Product deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

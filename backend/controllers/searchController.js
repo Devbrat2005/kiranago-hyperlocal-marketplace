@@ -38,7 +38,7 @@ exports.globalSearch = async (req, res) => {
     const userLng = lng ? parseFloat(lng) : null;
 
     // 1. Search Products
-    let matchedProducts = productsCol.find({});
+    let matchedProducts = await productsCol.find({});
 
     if (queryStr) {
       matchedProducts = matchedProducts.filter(p =>
@@ -51,13 +51,13 @@ exports.globalSearch = async (req, res) => {
 
     if (category) {
       matchedProducts = matchedProducts.filter(p =>
-        p.category.toLowerCase() === category.toLowerCase() ||
+        (p.category && p.category.toLowerCase() === category.toLowerCase()) ||
         p.categoryId === category
       );
     }
 
     if (brand) {
-      matchedProducts = matchedProducts.filter(p => p.brand.toLowerCase() === brand.toLowerCase());
+      matchedProducts = matchedProducts.filter(p => p.brand && p.brand.toLowerCase() === brand.toLowerCase());
     }
 
     if (minPrice) {
@@ -72,9 +72,13 @@ exports.globalSearch = async (req, res) => {
       matchedProducts = matchedProducts.filter(p => p.rating >= parseFloat(minRating));
     }
 
-    // Enrich products with store distance & name
-    matchedProducts = matchedProducts.map(p => {
-      const store = storesCol.findById(p.storeId);
+    // Enrich products with store distance & name asynchronously
+    const storeCache = {};
+    matchedProducts = await Promise.all(matchedProducts.map(async p => {
+      if (!storeCache[p.storeId]) {
+        storeCache[p.storeId] = await storesCol.findById(p.storeId);
+      }
+      const store = storeCache[p.storeId];
       const distance = (userLat && userLng && store)
         ? calculateDistance(userLat, userLng, store.latitude, store.longitude)
         : 2.5;
@@ -85,7 +89,7 @@ exports.globalSearch = async (req, res) => {
         storeRating: store ? store.rating : 4.8,
         distance
       };
-    });
+    }));
 
     // Sorting products
     if (sort === 'price_low') {
@@ -99,7 +103,7 @@ exports.globalSearch = async (req, res) => {
     }
 
     // 2. Search Stores
-    let matchedStores = storesCol.find({ isApproved: true });
+    let matchedStores = await storesCol.find({ isApproved: true });
     if (queryStr) {
       matchedStores = matchedStores.filter(s =>
         s.name.toLowerCase().includes(queryStr) ||
@@ -116,13 +120,14 @@ exports.globalSearch = async (req, res) => {
     });
 
     // 3. Search Categories
-    let matchedCategories = categoriesCol.find({});
+    let matchedCategories = await categoriesCol.find({});
     if (queryStr) {
       matchedCategories = matchedCategories.filter(c => c.name.toLowerCase().includes(queryStr));
     }
 
     // 4. Extract Unique Brands
-    const allBrands = Array.from(new Set(productsCol.find({}).map(p => p.brand).filter(Boolean)));
+    const allProducts = await productsCol.find({});
+    const allBrands = Array.from(new Set(allProducts.map(p => p.brand).filter(Boolean)));
     const matchedBrands = queryStr
       ? allBrands.filter(b => b.toLowerCase().includes(queryStr))
       : allBrands.slice(0, 10);

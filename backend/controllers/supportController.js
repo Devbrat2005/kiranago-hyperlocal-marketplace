@@ -5,21 +5,20 @@ const ticketsCol = db.collection('support_tickets');
 exports.createTicket = async (req, res) => {
   try {
     const userId = req.user ? req.user.id : (req.body.userId || 'guest_user');
-    const { issueType, subject, orderId, message } = req.body;
+    const { category, subject, orderId, message } = req.body;
 
     const ticketId = 'TKT' + Math.floor(100000 + Math.random() * 900000);
 
-    const newTicket = ticketsCol.insertOne({
+    const newTicket = await ticketsCol.insertOne({
       ticketId,
       userId,
       userName: req.user ? req.user.name : 'Customer',
-      userPhone: req.user ? req.user.phone : '9876543210',
-      issueType: issueType || 'Order Issue',
+      userEmail: req.user ? req.user.email : 'customer@example.com',
+      category: category || 'Order Issue',
       subject: subject || 'Customer Inquiry',
-      orderId: orderId || 'N/A',
+      message: message || 'I need support with my order.',
       status: 'OPEN', // OPEN, IN_PROGRESS, RESOLVED, CLOSED
-      messages: [{ sender: 'USER', text: message || 'I need support with my order.', timestamp: new Date().toISOString() }],
-      createdAt: new Date().toISOString()
+      responses: [{ sender: 'user', message: message || 'I need support with my order.', timestamp: new Date() }]
     });
 
     res.status(201).json({ success: true, message: 'Support ticket submitted successfully', ticket: newTicket });
@@ -33,7 +32,7 @@ exports.getTickets = async (req, res) => {
     const userId = req.user ? req.user.id : req.query.userId;
     const role = req.user ? req.user.role : 'CUSTOMER';
 
-    let tickets = ticketsCol.find({});
+    let tickets = await ticketsCol.find({});
     if (role === 'CUSTOMER' && userId) {
       tickets = tickets.filter(t => t.userId === userId);
     }
@@ -49,24 +48,23 @@ exports.updateTicketStatus = async (req, res) => {
     const { id } = req.params;
     const { status, replyMessage } = req.body;
 
-    const ticket = ticketsCol.findOne({ ticketId: id }) || ticketsCol.findById(id);
+    const ticket = (await ticketsCol.findOne({ ticketId: id })) || (await ticketsCol.findById(id));
     if (!ticket) {
       return res.status(404).json({ success: false, message: 'Support ticket not found' });
     }
 
-    const updatedMessages = [...(ticket.messages || [])];
+    const updatedResponses = [...(ticket.responses || [])];
     if (replyMessage) {
-      updatedMessages.push({
-        sender: 'ADMIN',
-        text: replyMessage,
-        timestamp: new Date().toISOString()
+      updatedResponses.push({
+        sender: 'admin',
+        message: replyMessage,
+        timestamp: new Date()
       });
     }
 
-    const updated = ticketsCol.updateOne({ _id: ticket._id || ticket.id }, {
+    const updated = await ticketsCol.updateOne({ _id: ticket._id || ticket.id }, {
       status,
-      messages: updatedMessages,
-      updatedAt: new Date().toISOString()
+      responses: updatedResponses
     });
 
     res.json({ success: true, message: `Ticket status updated to ${status}`, ticket: updated });

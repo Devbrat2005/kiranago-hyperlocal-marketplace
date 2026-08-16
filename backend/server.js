@@ -3,17 +3,13 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const { db, connectDB } = require('./config/db');
+const { connectDB, getDbStatus } = require('./config/db');
 const apiRoutes = require('./routes/api');
-
-const seedCategories = require('./data/seedCategories');
-const seedStores = require('./data/seedStores');
-const { baseProducts, storeProducts } = require('./data/seedProducts');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize Database Storage
+// Initialize MongoDB Atlas Connection
 connectDB();
 
 // CORS Configuration supporting Vercel deployment & local dev
@@ -38,44 +34,24 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Automatic Database Seeder Function
-function seedDatabaseIfEmpty() {
-  try {
-    const categoriesCol = db.collection('categories');
-    const storesCol = db.collection('stores');
-    const productsCol = db.collection('products');
-
-    if (categoriesCol.countDocuments() === 0) {
-      console.log('🌱 Seeding 26 Predefined Categories...');
-      categoriesCol.insertMany(seedCategories);
-    }
-
-    if (storesCol.countDocuments() === 0) {
-      console.log('🌱 Seeding 30 Realistic Kirana & Grocery Stores...');
-      storesCol.insertMany(seedStores);
-    }
-
-    if (productsCol.countDocuments() === 0) {
-      console.log('🌱 Seeding 300+ Realistic Grocery & Daily Needs Products...');
-      productsCol.insertMany(storeProducts);
-    }
-  } catch (err) {
-    console.error('Seeder notice:', err.message);
-  }
-}
-
-seedDatabaseIfEmpty();
-
 // API Routes
 app.use('/api', apiRoutes);
 
-// Base Health Endpoint
+// Base Health Endpoint featuring MongoDB status
 app.get('/api/health', (req, res) => {
+  const dbStatus = getDbStatus();
   res.json({
     status: 'ONLINE',
     app: 'KiranaGo Backend API',
+    database: {
+      type: 'MongoDB Atlas',
+      connectionStatus: dbStatus.status,
+      connectionCode: dbStatus.stateCode,
+      host: dbStatus.host,
+      name: dbStatus.dbName
+    },
     tagline: 'Your Local Store, Delivered Fast.',
-    environment: process.env.NODE_ENV || 'production',
+    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
   });
 });
@@ -83,7 +59,7 @@ app.get('/api/health', (req, res) => {
 // Root Route Welcome Message
 app.get('/', (req, res) => {
   res.json({
-    message: 'Welcome to KiranaGo Hyperlocal Marketplace Express API Server',
+    message: 'Welcome to KiranaGo Hyperlocal Marketplace Express API Server with MongoDB Mongoose Integration',
     health: '/api/health',
     tagline: 'Your Local Store, Delivered Fast.'
   });
@@ -105,6 +81,7 @@ if (!process.env.VERCEL && require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 KiranaGo Server running on http://localhost:${PORT}`);
     console.log(`📍 API endpoints mounted on http://localhost:${PORT}/api`);
+    console.log(`🏥 Health check status at http://localhost:${PORT}/api/health`);
   });
 }
 

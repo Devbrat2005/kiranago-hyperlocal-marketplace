@@ -21,7 +21,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide name, email, and password' });
     }
 
-    const existingUser = usersCol.findOne({ email });
+    const existingUser = await usersCol.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'User with this email already exists' });
     }
@@ -29,14 +29,13 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = usersCol.insertOne({
+    const newUser = await usersCol.insertOne({
       name,
-      email,
+      email: email.toLowerCase().trim(),
       phone: phone || '',
       password: hashedPassword,
       role: role.toUpperCase(),
-      addresses: address ? [address] : [],
-      createdAt: new Date().toISOString()
+      addresses: address ? [address] : []
     });
 
     const token = generateToken(newUser);
@@ -46,7 +45,7 @@ exports.register = async (req, res) => {
       message: 'Registration successful',
       token,
       user: {
-        id: newUser._id,
+        id: newUser._id || newUser.id,
         name: newUser.name,
         email: newUser.email,
         phone: newUser.phone,
@@ -67,7 +66,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    const user = usersCol.findOne({ email });
+    const user = await usersCol.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -99,7 +98,7 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const user = usersCol.findById(req.user.id);
+    const user = await usersCol.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -123,7 +122,7 @@ exports.getMe = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = usersCol.findOne({ email });
+    const user = await usersCol.findOne({ email: email ? email.toLowerCase().trim() : '' });
     if (!user) {
       return res.status(404).json({ success: false, message: 'No account registered with this email' });
     }
@@ -140,7 +139,7 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
-    const user = usersCol.findOne({ email });
+    const user = await usersCol.findOne({ email: email ? email.toLowerCase().trim() : '' });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -148,7 +147,7 @@ exports.resetPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    usersCol.updateOne({ email }, { password: hashedPassword });
+    await usersCol.updateOne({ email: email.toLowerCase().trim() }, { password: hashedPassword });
 
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {

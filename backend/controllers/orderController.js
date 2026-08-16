@@ -27,16 +27,16 @@ exports.createOrder = async (req, res) => {
       deliveryInstructions = ''
     } = req.body;
 
-    const userCart = cartsCol.findOne({ userId });
+    const userCart = await cartsCol.findOne({ userId });
     if (!userCart || !userCart.items || userCart.items.length === 0) {
       return res.status(400).json({ success: false, message: 'Your cart is empty' });
     }
 
     // Group items by store
     const storeMap = {};
-    userCart.items.forEach(item => {
-      const prod = productsCol.findById(item.productId);
-      if (!prod) return;
+    for (const item of userCart.items) {
+      const prod = await productsCol.findById(item.productId);
+      if (!prod) continue;
 
       const storeId = prod.storeId || 'store_1';
       if (!storeMap[storeId]) {
@@ -46,20 +46,20 @@ exports.createOrder = async (req, res) => {
         productId: prod._id || prod.id,
         name: prod.name,
         image: prod.image,
-        weight: prod.weight,
+        weight: prod.unit || prod.weight || '1 unit',
         price: prod.sellingPrice,
-        mrp: prod.mrp,
+        mrp: prod.price || prod.mrp || prod.sellingPrice,
         quantity: item.quantity,
         total: prod.sellingPrice * item.quantity
       });
-    });
+    }
 
     const createdOrders = [];
 
     // Create separate order for each store
     for (const storeId in storeMap) {
       const items = storeMap[storeId];
-      const store = storesCol.findById(storeId) || { name: 'Kirana Partner', deliveryFee: 15, latitude: 12.9716, longitude: 77.5946 };
+      const store = (await storesCol.findById(storeId)) || { name: 'Kirana Partner', deliveryFee: 15, latitude: 12.9716, longitude: 77.5946 };
 
       const itemsSubtotal = items.reduce((acc, i) => acc + i.total, 0);
       const deliveryFee = itemsSubtotal >= 500 ? 0 : (store.deliveryFee !== undefined ? store.deliveryFee : 15);
@@ -69,7 +69,7 @@ exports.createOrder = async (req, res) => {
 
       const orderId = 'KG' + Math.floor(100000 + Math.random() * 900000);
 
-      const newOrder = ordersCol.insertOne({
+      const newOrder = await ordersCol.insertOne({
         orderId,
         userId,
         customerName: req.user ? req.user.name : 'Customer',
@@ -102,23 +102,22 @@ exports.createOrder = async (req, res) => {
           { status: 'Picked Up', timestamp: null, completed: false },
           { status: 'Out for Delivery', timestamp: null, completed: false },
           { status: 'Delivered', timestamp: null, completed: false }
-        ],
-        createdAt: new Date().toISOString()
+        ]
       });
 
       createdOrders.push(newOrder);
 
       // Deduct stock for ordered products
-      items.forEach(i => {
-        const p = productsCol.findById(i.productId);
+      for (const i of items) {
+        const p = await productsCol.findById(i.productId);
         if (p) {
-          productsCol.updateOne({ _id: p._id || p.id }, { stock: Math.max(0, p.stock - i.quantity) });
+          await productsCol.updateOne({ _id: p._id || p.id }, { stock: Math.max(0, (p.stock || 50) - i.quantity) });
         }
-      });
+      }
     }
 
     // Clear cart after placing order
-    cartsCol.updateOne({ userId }, { items: [] });
+    await cartsCol.updateOne({ userId }, { items: [] });
 
     res.status(201).json({
       success: true,
@@ -133,12 +132,12 @@ exports.createOrder = async (req, res) => {
 exports.getOrders = async (req, res) => {
   try {
     const { role, id } = req.user || { role: 'CUSTOMER', id: req.query.userId || 'guest_user' };
-    let orders = ordersCol.find({});
+    let orders = await ordersCol.find({});
 
     if (role === 'CUSTOMER') {
       orders = orders.filter(o => o.userId === id);
     } else if (role === 'STORE_OWNER') {
-      orders = orders.filter(o => o.storeId === req.user.storeId || o.storeId === id || o.storeOwnerId === id);
+      orders = orders.filter(o => o.storeId === (req.user ? req.user.storeId : null) || o.storeId === id || o.storeOwnerId === id);
     } else if (role === 'DELIVERY_PARTNER') {
       orders = orders.filter(o => o.deliveryPartnerId === id || o.status === 'Ready for Pickup');
     }
@@ -159,13 +158,13 @@ exports.getOrders = async (req, res) => {
 exports.getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const order = ordersCol.findOne({ orderId: id }) || ordersCol.findById(id);
+    const order = (await ordersCol.findOne({ orderId: id })) || (await ordersCol.findById(id));
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    const store = storesCol.findById(order.storeId);
+    const store = await storesCol.findById(order.storeId);
 
     res.json({
       success: true,
@@ -184,13 +183,13 @@ exports.updateOrderStatus = async (req, res) => {
     const { id } = req.params;
     const { status, deliveryPartner } = req.body;
 
-    const order = ordersCol.findOne({ orderId: id }) || ordersCol.findById(id);
+    const order = (await ordersCol.findOne({ orderId: id })) || (await ordersCol.findById(id));
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
     // Update timeline
-    const updatedTimeline = order.timeline.map(t => {
+    const updatedTimeline = (order.timeline || []).map(t => {
       if (t.status === status) {
         return { ...t, timestamp: new Date().toISOString(), completed: true };
       }
@@ -217,7 +216,7 @@ exports.updateOrderStatus = async (req, res) => {
       updates.paymentStatus = 'PAID';
     }
 
-    const updatedOrder = ordersCol.updateOne({ _id: order._id || order.id }, updates);
+    const updatedOrder = await ordersCol.updateOne({ _id: order._id || order.id }, updates);
 
     res.json({
       success: true,
@@ -232,7 +231,7 @@ exports.updateOrderStatus = async (req, res) => {
 exports.cancelOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const order = ordersCol.findOne({ orderId: id }) || ordersCol.findById(id);
+    const order = (await ordersCol.findOne({ orderId: id })) || (await ordersCol.findById(id));
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -242,7 +241,7 @@ exports.cancelOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot cancel order once it is out for delivery' });
     }
 
-    const updatedOrder = ordersCol.updateOne({ _id: order._id || order.id }, {
+    const updatedOrder = await ordersCol.updateOne({ _id: order._id || order.id }, {
       status: 'Cancelled',
       cancelledAt: new Date().toISOString()
     });

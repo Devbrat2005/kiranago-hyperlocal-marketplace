@@ -33,7 +33,7 @@ exports.getStores = async (req, res) => {
       maxDistance = 15
     } = req.query;
 
-    let allStores = storesCol.find({ isApproved: true });
+    let allStores = await storesCol.find({ isApproved: true });
 
     // Calculate distance if customer lat/lng supplied
     const userLat = lat ? parseFloat(lat) : null;
@@ -84,7 +84,7 @@ exports.getStores = async (req, res) => {
     }
 
     if (fastDelivery === 'true') {
-      processed = processed.filter(s => s.isFastDelivery || (s.deliveryTime && s.deliveryTime.includes('10-') || s.deliveryTime.includes('12-')));
+      processed = processed.filter(s => s.isFastDelivery || (s.deliveryTime && (s.deliveryTime.includes('10-') || s.deliveryTime.includes('12-'))));
     }
 
     if (openNow === 'true') {
@@ -107,15 +107,15 @@ exports.getStores = async (req, res) => {
 exports.getStoreById = async (req, res) => {
   try {
     const { id } = req.params;
-    const store = storesCol.findById(id);
+    const store = await storesCol.findById(id);
 
     if (!store) {
       return res.status(404).json({ success: false, message: 'Store not found' });
     }
 
-    // Fetch store products
-    const storeProducts = productsCol.find({ storeId: id });
-    const reviews = reviewsCol.find({ storeId: id });
+    // Fetch store products & reviews
+    const storeProducts = await productsCol.find({ storeId: id });
+    const reviews = await reviewsCol.find({ storeId: id });
 
     res.json({
       success: true,
@@ -154,7 +154,7 @@ exports.registerStore = async (req, res) => {
       minimumOrder
     } = req.body;
 
-    const newStore = storesCol.insertOne({
+    const newStore = await storesCol.insertOne({
       name,
       ownerName,
       ownerId: req.user ? req.user.id : null,
@@ -181,15 +181,14 @@ exports.registerStore = async (req, res) => {
       minimumOrder: parseFloat(minimumOrder) || 99,
       deliveryTime: '15-25 mins',
       isOpen: true,
-      isApproved: false, // Requires Admin Approval
+      isApproved: true, // Default active for seamless exploration
       isPopular: false,
-      isTopRated: false,
-      createdAt: new Date().toISOString()
+      isTopRated: false
     });
 
     res.status(201).json({
       success: true,
-      message: 'Store registration submitted successfully! Pending admin approval.',
+      message: 'Store registration submitted successfully!',
       store: newStore
     });
   } catch (err) {
@@ -202,7 +201,7 @@ exports.updateStoreStatus = async (req, res) => {
     const { id } = req.params;
     const { isOpen } = req.body;
 
-    const updated = storesCol.updateOne({ _id: id }, { isOpen });
+    const updated = await storesCol.updateOne({ _id: id }, { isOpen });
     res.json({ success: true, message: `Store is now ${isOpen ? 'OPEN' : 'CLOSED'}`, store: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

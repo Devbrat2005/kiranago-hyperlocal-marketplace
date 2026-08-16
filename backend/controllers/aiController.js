@@ -3,7 +3,6 @@ const { db } = require('../config/db');
 const aiConvosCol = db.collection('ai_conversations');
 const ordersCol = db.collection('orders');
 const ticketsCol = db.collection('support_tickets');
-const storesCol = db.collection('stores');
 
 // Detect Hindi / Hinglish keywords
 function detectLanguage(text = '') {
@@ -30,11 +29,11 @@ function generateAIResponse(message, userOrders, userLanguage) {
   if (msg.includes('track') || msg.includes('where') || msg.includes('status') || msg.includes('kahan') || msg.includes('kab')) {
     if (latestOrder) {
       if (userLanguage === 'HINDI') {
-        replyText = `आपका आर्डर #${latestOrder.orderId} अभी "${latestOrder.status}" स्थिति में है। ${latestOrder.storeName} से आपके घर तक पहुंचने का अनुमानित समय ${latestOrder.estimatedDeliveryTime} है।`;
+        replyText = `आपका आर्डर #${latestOrder.orderId} अभी "${latestOrder.status}" स्थिति में है। ${latestOrder.storeName} से आपके घर तक पहुंचने का अनुमानित समय ${latestOrder.estimatedDeliveryTime || '15-25 mins'} है।`;
       } else if (userLanguage === 'HINGLISH') {
-        replyText = `Aapka order #${latestOrder.orderId} abhi "${latestOrder.status}" state me hai! ${latestOrder.storeName} se delivery ETA: ${latestOrder.estimatedDeliveryTime}.`;
+        replyText = `Aapka order #${latestOrder.orderId} abhi "${latestOrder.status}" state me hai! ${latestOrder.storeName} se delivery ETA: ${latestOrder.estimatedDeliveryTime || '15-25 mins'}.`;
       } else {
-        replyText = `Your order #${latestOrder.orderId} from ${latestOrder.storeName} is currently "${latestOrder.status}". Estimated delivery time: ${latestOrder.estimatedDeliveryTime}.`;
+        replyText = `Your order #${latestOrder.orderId} from ${latestOrder.storeName} is currently "${latestOrder.status}". Estimated delivery time: ${latestOrder.estimatedDeliveryTime || '15-25 mins'}.`;
       }
     } else {
       replyText = userLanguage === 'HINGLISH'
@@ -98,55 +97,50 @@ exports.chatWithAI = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Message is required' });
     }
 
-    const userOrders = ordersCol.find({ userId });
+    const userOrders = await ordersCol.find({ userId });
     const userLang = detectLanguage(message);
 
     const { replyText, quickActions, confidence, shouldEscalate } = generateAIResponse(message, userOrders, userLang);
 
     // Save or update conversation history
-    let convo = aiConvosCol.findOne({ userId });
+    let convo = await aiConvosCol.findOne({ userId });
     if (!convo) {
-      convo = aiConvosCol.insertOne({
+      convo = await aiConvosCol.insertOne({
         userId,
         customerName: req.user ? req.user.name : 'Customer',
         messages: [],
         confidence: 0.95,
-        escalated: false,
-        updatedAt: new Date().toISOString()
+        escalated: false
       });
     }
 
     const updatedMessages = [
       ...(convo.messages || []),
-      { sender: 'USER', text: message, timestamp: new Date().toISOString() },
-      { sender: 'AI', text: replyText, quickActions, timestamp: new Date().toISOString() }
+      { sender: 'user', text: message, timestamp: new Date() },
+      { sender: 'ai', text: replyText, timestamp: new Date() }
     ];
 
     let ticketId = null;
 
     if (shouldEscalate) {
-      const newTicket = ticketsCol.insertOne({
+      const newTicket = await ticketsCol.insertOne({
         ticketId: 'TKT' + Math.floor(100000 + Math.random() * 900000),
         userId,
         userName: req.user ? req.user.name : 'Customer',
-        userPhone: req.user ? req.user.phone : '9876543210',
-        orderId: orderId || (userOrders.length > 0 ? userOrders[0].orderId : 'N/A'),
-        issueType: 'AI_ESCALATION',
+        userEmail: req.user ? req.user.email : 'customer@example.com',
         subject: `AI Support Escalation: ${message.substring(0, 40)}`,
+        message,
         status: 'OPEN',
-        priority: 'HIGH',
-        messages: [{ sender: 'USER', text: message, timestamp: new Date().toISOString() }],
-        createdAt: new Date().toISOString()
+        priority: 'HIGH'
       });
       ticketId = newTicket.ticketId;
     }
 
-    aiConvosCol.updateOne({ _id: convo._id || convo.id }, {
+    await aiConvosCol.updateOne({ _id: convo._id || convo.id }, {
       messages: updatedMessages,
       confidence,
       escalated: convo.escalated || shouldEscalate,
-      ticketId: ticketId || convo.ticketId,
-      updatedAt: new Date().toISOString()
+      ticketId: ticketId || convo.ticketId
     });
 
     res.json({
@@ -165,7 +159,7 @@ exports.chatWithAI = async (req, res) => {
 
 exports.getAIConversations = async (req, res) => {
   try {
-    const convos = aiConvosCol.find({});
+    const convos = await aiConvosCol.find({});
     res.json({ success: true, count: convos.length, conversations: convos });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -176,21 +170,19 @@ exports.takeoverAIConversation = async (req, res) => {
   try {
     const { userId, adminReply } = req.body;
 
-    const convo = aiConvosCol.findOne({ userId });
+    const convo = await aiConvosCol.findOne({ userId });
     if (!convo) {
       return res.status(404).json({ success: false, message: 'Conversation not found' });
     }
 
     const updatedMessages = [
       ...(convo.messages || []),
-      { sender: 'HUMAN_ADMIN', text: adminReply, timestamp: new Date().toISOString() }
+      { sender: 'agent', text: adminReply, timestamp: new Date() }
     ];
 
-    aiConvosCol.updateOne({ userId }, {
+    await aiConvosCol.updateOne({ userId }, {
       messages: updatedMessages,
-      escalated: true,
-      humanAgentAssigned: true,
-      updatedAt: new Date().toISOString()
+      status: 'AGENT_TAKEOVER'
     });
 
     res.json({ success: true, message: 'Admin reply sent successfully' });
