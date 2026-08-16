@@ -44,45 +44,28 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve frontend static assets if dist exists
+// Root API Welcome Message
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Welcome to KiranaGo Hyperlocal Marketplace Express API Server with MongoDB Mongoose Integration',
+    health: '/api/health',
+    tagline: 'Your Local Store, Delivered Fast.'
+  });
+});
+
+// Serve frontend static assets if dist exists locally
 const distPath = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    return res.sendFile(path.resolve(distPath, 'index.html'));
+  });
 }
 
-// Fallback Route
-app.get('*', (req, res, next) => {
-  // Pass API calls to 404 handler
-  if (req.path.startsWith('/api')) {
-    return next();
-  }
-
-  // Serve index.html if dist exists
-  if (fs.existsSync(path.join(distPath, 'index.html'))) {
-    return res.sendFile(path.resolve(distPath, 'index.html'));
-  }
-
-  // Final fallback info
-  res.send(`
-    <!語html>
-    <html>
-      <head>
-        <title>KiranaGo Hyperlocal Marketplace</title>
-        <style>
-          body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-          .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); max-width: 500px; text-align: center; border: 1px solid #e2e8f0; }
-          .btn { display: inline-block; background: #059669; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 0.75rem; font-weight: bold; margin-top: 1rem; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h2 style="color: #059669; margin-top: 0;">🛒 KiranaGo API Server</h2>
-          <p>Express Backend is running and connected to MongoDB Atlas.</p>
-          <a href="/api/health" class="btn">View API Health Status</a>
-        </div>
-      </body>
-    </html>
-  `);
+// 404 Fallback for unhandled API requests
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'API Endpoint Not Found' });
 });
 
 // Start Server locally if not running on Vercel Serverless environment
