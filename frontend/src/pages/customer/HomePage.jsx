@@ -47,14 +47,25 @@ export default function HomePage({ onSelectStore, onSelectProduct, onOpenSearch,
   };
 
   const nearbyStores = stores.slice(0, 6);
-  const popularStores = stores.filter(s => s.isPopular).slice(0, 6);
-  const fastDeliveryStores = stores.filter(s => s.isFastDelivery).slice(0, 6);
-  const topRatedStores = stores.filter(s => s.rating >= 4.7).slice(0, 6);
+  const popStores = stores.filter(s => s.isPopular);
+  const popularStores = (popStores.length > 0 ? popStores : stores).slice(0, 6);
+  const fastStores = stores.filter(s => s.isFastDelivery);
+  const fastDeliveryStores = (fastStores.length > 0 ? fastStores : stores).slice(0, 6);
+  const topStores = stores.filter(s => s.rating >= 4.5);
+  const topRatedStores = (topStores.length > 0 ? topStores : stores).slice(0, 6);
 
-  const popularProducts = products.filter(p => p.isPopular).slice(0, 8);
-  const bestOffers = products.filter(p => p.discount >= 15).slice(0, 8);
-  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8);
-  const recommendedProducts = products.filter(p => p.isRecommended).slice(0, 8);
+  const popProds = products.filter(p => p.isPopular);
+  const popularProducts = (popProds.length > 0 ? popProds : products).slice(0, 8);
+  
+  const offerProds = products.filter(p => (parseFloat(p.discount) || 0) >= 10 || (typeof p.discount === 'string' && p.discount.includes('%')) || p.isOffer);
+  const bestOffers = (offerProds.length > 0 ? offerProds : (products.length > 8 ? products.slice(8) : products)).slice(0, 8);
+  
+  const sellerProds = products.filter(p => p.isBestSeller);
+  const bestSellers = (sellerProds.length > 0 ? sellerProds : (products.length > 16 ? products.slice(16) : products)).slice(0, 8);
+  
+  const recProds = products.filter(p => p.isRecommended);
+  const recommendedProducts = (recProds.length > 0 ? recProds : (products.length > 24 ? products.slice(24) : products)).slice(0, 8);
+  
   const recentlyAdded = products.slice(-8);
 
   return (

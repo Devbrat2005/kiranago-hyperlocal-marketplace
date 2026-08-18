@@ -53,14 +53,18 @@ exports.getStores = async (req, res) => {
       };
     });
 
-    // Filtering
+    // Resilient distance filtering (falls back to all stores if GPS filtering yields 0 matches)
+    let filtered = processed;
     if (userLat && userLng) {
-      processed = processed.filter(s => s.canDeliver && s.distance <= parseFloat(maxDistance));
+      const distanceFiltered = processed.filter(s => s.canDeliver && s.distance <= parseFloat(maxDistance));
+      if (distanceFiltered.length > 0) {
+        filtered = distanceFiltered;
+      }
     }
 
     if (query) {
       const q = query.toLowerCase();
-      processed = processed.filter(s =>
+      filtered = filtered.filter(s =>
         s.name.toLowerCase().includes(q) ||
         (s.category && s.category.toLowerCase().includes(q)) ||
         (s.area && s.area.toLowerCase().includes(q))
@@ -68,36 +72,40 @@ exports.getStores = async (req, res) => {
     }
 
     if (category) {
-      processed = processed.filter(s => s.category && s.category.toLowerCase() === category.toLowerCase());
+      filtered = filtered.filter(s => s.category && s.category.toLowerCase() === category.toLowerCase());
     }
 
     if (rating) {
-      processed = processed.filter(s => s.rating >= parseFloat(rating));
+      filtered = filtered.filter(s => s.rating >= parseFloat(rating));
     }
 
     if (popular === 'true') {
-      processed = processed.filter(s => s.isPopular);
+      const popFiltered = filtered.filter(s => s.isPopular);
+      if (popFiltered.length > 0) filtered = popFiltered;
     }
 
     if (topRated === 'true') {
-      processed = processed.filter(s => s.isTopRated || s.rating >= 4.7);
+      const topFiltered = filtered.filter(s => s.isTopRated || s.rating >= 4.5);
+      if (topFiltered.length > 0) filtered = topFiltered;
     }
 
     if (fastDelivery === 'true') {
-      processed = processed.filter(s => s.isFastDelivery || (s.deliveryTime && (s.deliveryTime.includes('10-') || s.deliveryTime.includes('12-'))));
+      const fastFiltered = filtered.filter(s => s.isFastDelivery || (s.deliveryTime && (s.deliveryTime.includes('10-') || s.deliveryTime.includes('12-') || s.deliveryTime.includes('15-'))));
+      if (fastFiltered.length > 0) filtered = fastFiltered;
     }
 
     if (openNow === 'true') {
-      processed = processed.filter(s => s.isOpen);
+      const openFiltered = filtered.filter(s => s.isOpen);
+      if (openFiltered.length > 0) filtered = openFiltered;
     }
 
     // Sort by distance
-    processed.sort((a, b) => a.distance - b.distance);
+    filtered.sort((a, b) => a.distance - b.distance);
 
     res.json({
       success: true,
-      count: processed.length,
-      stores: processed
+      count: filtered.length,
+      stores: filtered
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
