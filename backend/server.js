@@ -3,6 +3,10 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
+const rootEnvPath = path.join(__dirname, '../.env');
+if (fs.existsSync(rootEnvPath)) {
+  require('dotenv').config({ path: rootEnvPath });
+}
 
 const { connectDB, getDbStatus } = require('./config/db');
 const apiRoutes = require('./routes/api');

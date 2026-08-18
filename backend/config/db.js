@@ -30,6 +30,10 @@ function getFallbackData(collectionName) {
 function getMongoURI() {
   let uri = process.env.MONGODB_URI;
 
+  if (uri && !uri.includes('<db_password>') && !uri.includes('<my MongoDB password>')) {
+    return uri;
+  }
+
   const username = process.env.MONGODB_USERNAME || 'devbrat01042005_db_user';
   const password = process.env.MONGODB_PASSWORD;
 
@@ -84,6 +88,7 @@ const connectDB = async () => {
 
   try {
     const conn = await mongoose.connect(uri, {
+      dbName: 'kiranago',
       serverSelectionTimeoutMS: 5000
     });
     console.log(`🚀 MongoDB Atlas Connected: ${conn.connection.host} / Database: ${conn.connection.name}`);
