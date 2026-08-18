@@ -70,6 +70,13 @@ const modelMap = {
 
 // Database Connection function
 const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return true;
+  }
+  if (mongoose.connection.readyState === 2) {
+    return true;
+  }
+
   const uri = getMongoURI();
 
   if (!uri) {

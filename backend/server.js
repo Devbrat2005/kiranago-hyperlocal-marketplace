@@ -26,6 +26,18 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Ensure MongoDB Atlas is connected on Vercel Serverless requests
+app.use(async (req, res, next) => {
+  const { getDbStatus } = require('./config/db');
+  const status = getDbStatus();
+  if (status.stateCode !== 1 && status.stateCode !== 2) {
+    try {
+      await connectDB();
+    } catch (e) {}
+  }
+  next();
+});
+
 // Mount API Routes
 app.use('/api', apiRoutes);
 
