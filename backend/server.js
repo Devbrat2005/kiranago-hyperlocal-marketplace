@@ -29,6 +29,8 @@ app.use('/api', apiRoutes);
 app.get('/api/health', (req, res) => {
   const dbStatus = getDbStatus();
   res.json({
+    success: true,
+    message: 'KiranaGo API is working',
     status: 'ONLINE',
     app: 'KiranaGo Backend API',
     database: {
