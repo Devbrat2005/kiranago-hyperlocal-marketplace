@@ -1,70 +1,111 @@
+const path = require('path');
+const fs = require('fs');
 const models = require('../models');
-const seedCategories = require('./seedCategories');
-const seedStores = require('./seedStores');
-const { storeProducts } = require('./seedProducts');
 
 async function seedDatabaseIfEmpty() {
   try {
     const { Category, Store, Product } = models;
 
-    // Check Categories count
+    // 1. Categories
     const categoryCount = await Category.countDocuments();
-    if (categoryCount === 0 && Array.isArray(seedCategories) && seedCategories.length > 0) {
-      console.log('🌱 MongoDB Atlas: Seeding Categories...');
-      await Category.insertMany(seedCategories.map(c => ({
-        id: c.id,
-        name: c.name,
-        icon: c.icon || '🛒',
-        image: c.image || '',
-        itemCount: c.itemCount || '50+ Items',
-        bgGradient: c.bgGradient || 'from-amber-50 to-orange-100'
-      })), { ordered: false }).catch(err => console.log('Category seed notice:', err.message));
-      console.log(`✅ Seeded ${seedCategories.length} Categories into MongoDB`);
+    if (categoryCount === 0) {
+      const categoriesPath = path.join(__dirname, '../data_store/categories.json');
+      if (fs.existsSync(categoriesPath)) {
+        const rawCat = fs.readFileSync(categoriesPath, 'utf8');
+        const categoriesData = JSON.parse(rawCat);
+        if (Array.isArray(categoriesData) && categoriesData.length > 0) {
+          console.log(`🌱 Auto Seeding ${categoriesData.length} Categories...`);
+          const ops = categoriesData.map(c => {
+            const id = c.id || c._id;
+            return {
+              updateOne: {
+                filter: { id },
+                update: { $set: { id, name: c.name, icon: c.icon || '🛒', image: c.image || '', itemCount: c.itemCount || '50+ Items', bgGradient: c.bgGradient || 'from-amber-50 to-orange-100' } },
+                upsert: true
+              }
+            };
+          });
+          await Category.bulkWrite(ops);
+        }
+      }
     }
 
-    // Check Stores count
+    // 2. Stores
     const storeCount = await Store.countDocuments();
-    if (storeCount === 0 && Array.isArray(seedStores) && seedStores.length > 0) {
-      console.log('🌱 MongoDB Atlas: Seeding Kirana Stores...');
-      await Store.insertMany(seedStores.map(s => ({
-        ...s,
-        isApproved: true
-      })), { ordered: false }).catch(err => console.log('Store seed notice:', err.message));
-      console.log(`✅ Seeded ${seedStores.length} Stores into MongoDB`);
+    if (storeCount === 0) {
+      const storesPath = path.join(__dirname, '../data_store/stores.json');
+      if (fs.existsSync(storesPath)) {
+        const rawStores = fs.readFileSync(storesPath, 'utf8');
+        const storesData = JSON.parse(rawStores);
+        if (Array.isArray(storesData) && storesData.length > 0) {
+          console.log(`🌱 Auto Seeding ${storesData.length} Stores...`);
+          const ops = storesData.map(s => {
+            const id = s.id || s._id;
+            const doc = { ...s, id, isApproved: true };
+            delete doc._id;
+            return {
+              updateOne: {
+                filter: { id },
+                update: { $set: doc },
+                upsert: true
+              }
+            };
+          });
+          await Store.bulkWrite(ops);
+        }
+      }
     }
 
-    // Check Products count
+    // 3. Products
     const productCount = await Product.countDocuments();
-    if (productCount === 0 && Array.isArray(storeProducts) && storeProducts.length > 0) {
-      console.log('🌱 MongoDB Atlas: Seeding Products...');
-      const mappedProducts = storeProducts.map(p => ({
-        id: p.id,
-        storeId: p.storeId || 'store_1',
-        storeName: p.storeName || 'Kirana Partner',
-        name: p.name,
-        brand: p.brand || 'Generic',
-        category: p.category || 'Grocery',
-        categoryId: p.categoryId || 'cat_grocery',
-        mrp: p.mrp || p.price || p.sellingPrice || 100,
-        price: p.price || p.mrp || p.sellingPrice || 100,
-        sellingPrice: p.sellingPrice || p.price || p.mrp || 90,
-        discount: p.discount || '0%',
-        weight: p.weight || p.unit || '500 g',
-        unit: p.unit || p.weight || '500 g',
-        image: p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60',
-        description: p.description || '',
-        rating: p.rating || 4.8,
-        reviewsCount: p.reviewsCount || 12,
-        isPopular: p.isPopular || false,
-        isBestSeller: p.isBestSeller || false,
-        isRecommended: p.isRecommended || false,
-        stock: p.stock !== undefined ? p.stock : 50,
-        inStock: p.inStock !== undefined ? p.inStock : true
-      }));
-
-      await Product.insertMany(mappedProducts, { ordered: false }).catch(err => console.log('Product seed notice:', err.message));
-      const newCount = await Product.countDocuments();
-      console.log(`✅ Seeded ${newCount} Products into MongoDB Atlas!`);
+    if (productCount === 0) {
+      const productsPath = path.join(__dirname, '../data_store/products.json');
+      if (fs.existsSync(productsPath)) {
+        const rawProds = fs.readFileSync(productsPath, 'utf8');
+        const productsData = JSON.parse(rawProds);
+        if (Array.isArray(productsData) && productsData.length > 0) {
+          console.log(`🌱 Auto Seeding ${productsData.length} Products into MongoDB...`);
+          const ops = productsData.map(p => {
+            const id = p.id || p._id;
+            const mrpVal = parseFloat(p.mrp) || parseFloat(p.price) || parseFloat(p.sellingPrice) || 100;
+            const sellingPriceVal = parseFloat(p.sellingPrice) || parseFloat(p.price) || mrpVal || 90;
+            const doc = {
+              id,
+              storeId: p.storeId || 'store_1',
+              storeName: p.storeName || 'Kirana Partner',
+              name: p.name,
+              brand: p.brand || 'Generic',
+              category: p.category || 'Grocery',
+              categoryId: p.categoryId || 'cat_grocery',
+              mrp: mrpVal,
+              price: mrpVal,
+              sellingPrice: sellingPriceVal,
+              discount: p.discount || '0%',
+              unit: p.weight || p.unit || '500 g',
+              weight: p.weight || p.unit || '500 g',
+              image: p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60',
+              description: p.description || '',
+              rating: parseFloat(p.rating) || 4.8,
+              reviewsCount: parseInt(p.reviewsCount, 10) || 12,
+              isPopular: Boolean(p.isPopular),
+              isBestSeller: Boolean(p.isBestSeller),
+              isRecommended: Boolean(p.isRecommended),
+              stock: p.stock !== undefined ? parseInt(p.stock, 10) : 50,
+              inStock: p.inStock !== undefined ? Boolean(p.inStock) : true
+            };
+            return {
+              updateOne: {
+                filter: { id },
+                update: { $set: doc },
+                upsert: true
+              }
+            };
+          });
+          await Product.bulkWrite(ops);
+          const finalCount = await Product.countDocuments();
+          console.log(`✅ Auto-Seeded ${finalCount} Products into MongoDB Atlas!`);
+        }
+      }
     }
 
   } catch (err) {

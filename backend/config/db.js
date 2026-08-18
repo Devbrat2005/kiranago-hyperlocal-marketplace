@@ -113,10 +113,13 @@ class MongooseCollectionAdapter {
   async find(query = {}) {
     if (this.isDbConnected() && this.model) {
       try {
-        return await this.model.find(query).lean();
+        const results = await this.model.find(query).lean();
+        if (Array.isArray(results) && results.length > 0) {
+          return results;
+        }
       } catch (e) {}
     }
-    // Offline fallback
+    // Offline / empty DB collection fallback
     const items = getFallbackData(this.name);
     if (!query || Object.keys(query).length === 0) return [...items];
     return items.filter(item => {
