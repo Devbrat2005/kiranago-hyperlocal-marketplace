@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const backendTarget = process.env.VITE_API_URL || 'https://kiranago-hyperlocal-marketplace.vercel.app';
+const backendTarget = process.env.VITE_API_URL || 'https://kiranago-hyperlocal-marketplace-xzxv-mtbi96phr.vercel.app';
+
 
 export default defineConfig({
   plugins: [react()],
