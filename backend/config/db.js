@@ -1,5 +1,30 @@
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 const models = require('../models');
+
+// Disable Mongoose command buffering so queries fail-fast when DB is disconnected
+mongoose.set('bufferCommands', false);
+
+// In-memory fallback data cache for offline / disconnected DB mode
+const memoryStore = {};
+
+function getFallbackData(collectionName) {
+  if (!memoryStore[collectionName]) {
+    const jsonPath = path.join(__dirname, '../data_store', `${collectionName}.json`);
+    try {
+      if (fs.existsSync(jsonPath)) {
+        const raw = fs.readFileSync(jsonPath, 'utf8');
+        memoryStore[collectionName] = JSON.parse(raw);
+      } else {
+        memoryStore[collectionName] = [];
+      }
+    } catch (err) {
+      memoryStore[collectionName] = [];
+    }
+  }
+  return memoryStore[collectionName];
+}
 
 // Helper to construct connection URI dynamically from environment variables
 function getMongoURI() {
@@ -74,39 +99,44 @@ const connectDB = async () => {
   }
 };
 
-// Mongoose-backed collection wrapper for unified model access
+// Unified collection wrapper with Mongoose + JSON fallback
 class MongooseCollectionAdapter {
   constructor(name) {
     this.name = name;
     this.model = modelMap[name] || null;
   }
 
+  isDbConnected() {
+    return mongoose.connection.readyState === 1;
+  }
+
   async find(query = {}) {
-    if (this.model) {
+    if (this.isDbConnected() && this.model) {
       try {
-        const docs = await this.model.find(query).lean();
-        return docs;
-      } catch (e) {
-        return [];
-      }
+        return await this.model.find(query).lean();
+      } catch (e) {}
     }
-    return [];
+    // Offline fallback
+    const items = getFallbackData(this.name);
+    if (!query || Object.keys(query).length === 0) return [...items];
+    return items.filter(item => {
+      return Object.entries(query).every(([k, v]) => item[k] === v);
+    });
   }
 
   async findOne(query = {}) {
-    if (this.model) {
+    if (this.isDbConnected() && this.model) {
       try {
         return await this.model.findOne(query).lean();
-      } catch (e) {
-        return null;
-      }
+      } catch (e) {}
     }
-    return null;
+    const items = getFallbackData(this.name);
+    return items.find(item => Object.entries(query).every(([k, v]) => item[k] === v)) || null;
   }
 
   async findById(id) {
     if (!id) return null;
-    if (this.model) {
+    if (this.isDbConnected() && this.model) {
       const isValidObjId = mongoose.Types.ObjectId.isValid(id) && String(id).length === 24;
       if (isValidObjId) {
         try {
@@ -120,61 +150,76 @@ class MongooseCollectionAdapter {
           orConditions.push({ _id: id });
         }
         return await this.model.findOne({ $or: orConditions }).lean();
-      } catch (e) {
-        return null;
-      }
+      } catch (e) {}
     }
-    return null;
+    const items = getFallbackData(this.name);
+    return items.find(item => item._id === id || item.id === String(id) || item.storeId === String(id) || item.orderId === String(id)) || null;
   }
 
   async insertOne(doc) {
-    if (this.model) {
-      const created = await this.model.create(doc);
-      return created.toObject();
+    if (this.isDbConnected() && this.model) {
+      try {
+        const created = await this.model.create(doc);
+        return created.toObject();
+      } catch (e) {}
     }
-    return null;
+    const items = getFallbackData(this.name);
+    const newDoc = { id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, ...doc };
+    items.push(newDoc);
+    return newDoc;
   }
 
   async insertMany(docs) {
-    if (this.model) {
-      const created = await this.model.insertMany(docs);
-      return created.map(d => d.toObject());
+    if (this.isDbConnected() && this.model) {
+      try {
+        const created = await this.model.insertMany(docs);
+        return created.map(d => d.toObject());
+      } catch (e) {}
     }
-    return [];
+    const items = getFallbackData(this.name);
+    items.push(...docs);
+    return docs;
   }
 
   async updateOne(query, update) {
-    if (this.model) {
+    if (this.isDbConnected() && this.model) {
       try {
         const updated = await this.model.findOneAndUpdate(query, update, { new: true, upsert: true }).lean();
         return updated;
-      } catch (e) {
-        return null;
-      }
+      } catch (e) {}
+    }
+    const items = getFallbackData(this.name);
+    const item = items.find(i => Object.entries(query).every(([k, v]) => i[k] === v));
+    if (item) {
+      Object.assign(item, update);
+      return item;
     }
     return null;
   }
 
   async deleteOne(query) {
-    if (this.model) {
+    if (this.isDbConnected() && this.model) {
       try {
         return await this.model.findOneAndDelete(query).lean();
-      } catch (e) {
-        return null;
-      }
+      } catch (e) {}
+    }
+    const items = getFallbackData(this.name);
+    const idx = items.findIndex(i => Object.entries(query).every(([k, v]) => i[k] === v));
+    if (idx !== -1) {
+      return items.splice(idx, 1)[0];
     }
     return null;
   }
 
   async countDocuments(query = {}) {
-    if (this.model) {
+    if (this.isDbConnected() && this.model) {
       try {
         return await this.model.countDocuments(query);
-      } catch (e) {
-        return 0;
-      }
+      } catch (e) {}
     }
-    return 0;
+    const items = getFallbackData(this.name);
+    if (!query || Object.keys(query).length === 0) return items.length;
+    return items.filter(i => Object.entries(query).every(([k, v]) => i[k] === v)).length;
   }
 }
 
@@ -210,3 +255,4 @@ module.exports = {
   getDbStatus,
   models
 };
+

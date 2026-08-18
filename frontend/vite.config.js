@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const backendTarget = process.env.VITE_API_URL || 'https://kiranago-hyperlocal-marketplace.vercel.app';
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -11,9 +13,11 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
+        target: backendTarget,
+        changeOrigin: true,
+        secure: false
       }
     }
   }
 });
+
