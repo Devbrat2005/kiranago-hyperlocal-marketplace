@@ -20,6 +20,10 @@ const categories = require('../data/seedCategories');
 // Auth Routes
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
+router.post('/auth/logout', authController.logout);
+router.post('/auth/google', authController.googleAuth);
+router.get('/auth/google', authController.googleRedirect);
+router.get('/auth/google/callback', authController.googleCallback);
 router.get('/auth/me', protect, authController.getMe);
 router.post('/auth/forgot-password', authController.forgotPassword);
 router.post('/auth/reset-password', authController.resetPassword);

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Logo from '../../components/common/Logo';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl } from '../../config/api';
-import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 export default function LoginPage({ onSwitchToSignup, onLoginSuccess }) {
   const { login } = useAuth();
@@ -20,6 +21,7 @@ export default function LoginPage({ onSwitchToSignup, onLoginSuccess }) {
       const res = await fetch(getApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
@@ -27,26 +29,10 @@ export default function LoginPage({ onSwitchToSignup, onLoginSuccess }) {
         login(data.user, data.token);
         if (onLoginSuccess) onLoginSuccess();
       } else {
-        // Safe fallback demo login
-        login({
-          id: 'cust_demo_1',
-          name: 'Rahul Sharma',
-          email,
-          phone: '9876543210',
-          role: 'CUSTOMER'
-        }, 'demo_token_2026');
-        if (onLoginSuccess) onLoginSuccess();
+        setError(data.message || 'Invalid email or password');
       }
     } catch (err) {
-      // Demo login fallback
-      login({
-        id: 'cust_demo_1',
-        name: 'Rahul Sharma',
-        email: email || 'rahul@example.com',
-        phone: '9876543210',
-        role: 'CUSTOMER'
-      }, 'demo_token_2026');
-      if (onLoginSuccess) onLoginSuccess();
+      setError('Network error: Unable to connect to KiranaGo server');
     } finally {
       setLoading(false);
     }
@@ -63,7 +49,9 @@ export default function LoginPage({ onSwitchToSignup, onLoginSuccess }) {
         </div>
 
         {error && (
-          <div className="p-3 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200">{error}</div>
+          <div className="p-3 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 text-center animate-fadeIn">
+            {error}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,16 +88,27 @@ export default function LoginPage({ onSwitchToSignup, onLoginSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-extrabold rounded-2xl shadow-md text-xs transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-extrabold rounded-2xl shadow-md text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
           >
             {loading ? 'Signing In...' : 'Sign In'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
+        {/* Divider */}
+        <div className="relative flex items-center justify-center my-4">
+          <div className="border-t border-slate-200 w-full"></div>
+          <span className="bg-white px-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider absolute">
+            OR
+          </span>
+        </div>
+
+        {/* Google OAuth Sign-In Button */}
+        <GoogleSignInButton onSuccess={onLoginSuccess} text="Continue with Google" />
+
         <div className="text-center pt-4 border-t border-slate-100 text-xs">
           <span className="text-slate-500">Don't have an account? </span>
           <button onClick={onSwitchToSignup} className="font-bold text-emerald-600 hover:underline">
-            Register Now
+            Create Account
           </button>
         </div>
 

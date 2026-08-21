@@ -1,0 +1,184 @@
+import React, { useState } from 'react';
+import Logo from '../../components/common/Logo';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
+import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../config/api';
+import { User, Mail, Phone, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+
+export default function RegisterPage({ onSwitchToLogin, onRegisterSuccess }) {
+  const { login } = useAuth();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(getApiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          password,
+          role: 'CUSTOMER'
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        login(data.user, data.token);
+        if (onRegisterSuccess) onRegisterSuccess();
+      } else {
+        setError(data.message || 'Registration failed');
+      }
+    } catch (err) {
+      setError('Network error: Unable to connect to KiranaGo server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
+      <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-100 shadow-xl space-y-6">
+        
+        <div className="text-center space-y-2">
+          <Logo size="large" showTagline={true} className="items-center" />
+          <h2 className="text-xl font-heading font-extrabold text-slate-900 pt-2">Create Account</h2>
+          <p className="text-xs text-slate-500">Join KiranaGo for fast local grocery delivery</p>
+        </div>
+
+        {error && (
+          <div className="p-3 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 flex items-center gap-2 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Full Name</label>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                placeholder="Rahul Sharma"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+              />
+              <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Email Address</label>
+            <div className="relative">
+              <input
+                type="email"
+                required
+                placeholder="rahul@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+              />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Mobile Number</label>
+            <div className="relative">
+              <input
+                type="tel"
+                placeholder="9876543210"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+              />
+              <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Password</label>
+            <div className="relative">
+              <input
+                type="password"
+                required
+                placeholder="•••••••• (min 6 characters)"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+              />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Confirm Password</label>
+            <div className="relative">
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+              />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-extrabold rounded-2xl shadow-md text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
+          >
+            {loading ? 'Creating Account...' : 'Register Account'} <ArrowRight className="w-4 h-4" />
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center my-4">
+          <div className="border-t border-slate-200 w-full"></div>
+          <span className="bg-white px-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider absolute">
+            OR
+          </span>
+        </div>
+
+        {/* Google OAuth Sign-In Button */}
+        <GoogleSignInButton onSuccess={onRegisterSuccess} text="Continue with Google" />
+
+        <div className="text-center pt-4 border-t border-slate-100 text-xs">
+          <span className="text-slate-500">Already have an account? </span>
+          <button onClick={onSwitchToLogin} className="font-bold text-emerald-600 hover:underline">
+            Sign In
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}

@@ -1,7 +1,7 @@
 // KiranaGo Centralized API Configuration
 // Resolves backend API URL dynamically via VITE_API_URL environment variable or falls back to deployed production backend URL
 
-const DEPLOYED_BACKEND_URL = 'https://kiranago-hyperlocal-marketplace-xzx.vercel.app';
+const DEPLOYED_BACKEND_URL = 'https://kiranago-hyperlocal-marketplace-xzx.vercel.app/api';
 
 
 
